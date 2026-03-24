@@ -19,6 +19,9 @@ import invoiceReducer from "../features/invoice/invoiceSlice";
 import creditNoteReducer from "../features/creditNote/creditNoteSlice";
 import paymentReducer from "../features/payment/paymentSlice";
 import activityLogReducer from "../features/activityLog/activityLogSlice";
+import corporateVisitorReducer from "../features/visitor/corporateVisitorSlice";
+import generalVisitorReducer from "../features/visitor/generalVisitorSlice";
+import healthCampVisitorReducer from "../features/visitor/freeHealthCampSlice";
 
 export const store = configureStore({
   reducer: {
@@ -42,6 +45,9 @@ export const store = configureStore({
     invoice: invoiceReducer,
     creditnotes: creditNoteReducer,
     payment: paymentReducer,
+    corporateVisitors: corporateVisitorReducer,
+    generalVisitors: generalVisitorReducer,
+    healthCampVisitors: healthCampVisitorReducer,
   },
 });
 

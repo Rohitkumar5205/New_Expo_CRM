@@ -57,6 +57,7 @@ import CreditNote from "./Components/CreditNote";
 import Payments from "./Components/payments/Payment";
 import PaymentEdit from "./Components/payments/PaymentEdit";
 import InvoiceEdit from "./Components/InvoiceEdit";
+import VisitorDetail from "./Components/VisitorDetail";
 const App = () => {
   return (
     <>
@@ -185,6 +186,10 @@ const App = () => {
           <Route
             path="/webVisitorData/healthCampVisitorsList"
             element={<HealthCampVisitorsList />}
+          />
+          <Route
+            path="/webVisitorData/visitorDetails/:id"
+            element={<VisitorDetail />}
           />
 
           {/* OrganicExpo2026 */}

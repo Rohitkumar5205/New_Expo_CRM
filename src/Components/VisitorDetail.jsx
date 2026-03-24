@@ -1,26 +1,12 @@
 import React from "react";
-
+import { useParams } from "react-router-dom";
 const VisitorDetail = ({ visitor, onBack }) => {
+  const { id } = useParams();
   const statusOptions = [
-    "Select Status",
-    "Sent Details",
-    "Follow-up Call",
-    "Warm Client",
-    "Hot Client",
-    "Est./PI Sent",
-    "Adv. Recd",
-    "PYMT Recd",
-    "Inv. Req.",
-    "Visitor Pass Sent",
-    "Not Interested",
-    "FB Lead",
-    "Instagram Lead",
-    "Web Lead",
-    "Whatsapp Lead",
-    "Company Not Available",
-    "Wrong Data",
-    "Under PYMT Followups",
-    "Reminder Reschedule",
+    "Data Send",
+    "Reminded 1 Sent",
+    "Reminded 2 Sent",
+    "Reminded 3 Sent",
   ];
 
   // Sample visitor data for demo
@@ -39,21 +25,13 @@ const VisitorDetail = ({ visitor, onBack }) => {
   const currentVisitor = visitor || defaultVisitor;
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 p-4">
+    <div className="w-full min-h-screen bg-gray-100">
       {/* Header section with buttons */}
       <div className="w-full bg-white shadow-md border-b mb-6">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-semibold text-gray-700 mb-2 lg:mb-0">
-            VISITOR OVERVIEW
+          <h1 className="text-xl font-medium text-gray-700 mb-2 lg:mb-0 uppercase">
+            Web Vistor Data
           </h1>
-          <div className="flex gap-2">
-            <button
-              onClick={onBack}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-sm text-sm font-medium"
-            >
-              Back to List
-            </button>
-          </div>
         </div>
       </div>
 

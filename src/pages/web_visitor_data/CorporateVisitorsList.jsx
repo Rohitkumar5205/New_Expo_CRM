@@ -1,124 +1,94 @@
-// import React from "react";
-
-// const CorporateVisitorsList = () => {
-//   return (
-//     <div>
-//       <h2>CorporateVisitorsList</h2>
-//     </div>
-//   );
-// };
-
-// export default CorporateVisitorsList;
-import React, { useState } from "react";
-import Globallytable from "../../Components/Globallytable";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchCorporateVisitors,
+  deleteCorporateVisitor,
+} from "../../features/visitor/corporateVisitorSlice";
 import ClientOverview from "../../Components/ClientOverview";
-import UploaderTextarea from "../../Components/UploaderTextarea";
+import { showSuccess, showError } from "../../utils/toastMessage";
+import VisitorGloballytable from "../../Components/VisitorGloballytable";
+import { Link } from "react-router-dom";
 
 const CorporateVisitorsList = () => {
+  const dispatch = useDispatch();
   const [selectedClient, setSelectedClient] = useState(null);
 
-  const columns = [
-    { label: "Company Name", accessor: "company.name" },
-    { label: "Company Email", accessor: "company.email" },
-    { label: "Contact Person", accessor: "contact.person" },
-    { label: "Phone", accessor: "contact.phone" },
-    { label: "Category", accessor: "category.main" },
-    { label: "Sub Category", accessor: "category.sub" },
-    { label: "Business Type", accessor: "Bussiness.type" },
-    { label: "City", accessor: "location.city" },
-    { label: "State", accessor: "location.state" },
-    { label: "Pincode", accessor: "location.pincode" },
-    { label: "Source Type", accessor: "source.type" },
-    { label: "Added By", accessor: "source.addedBy" },
-    { label: "Last Update Date", accessor: "update.date" },
-    { label: "Updated By", accessor: "update.by" },
-  ];
+  const { corporateVisitors, loading } = useSelector(
+    (state) => state.corporateVisitors,
+  );
 
-  const rows = [
-    {
-      checkbox: true,
-      company: { name: "Tentamus India Pvt. Ltd", email: "labs@tentamus.com" },
-      contact: { person: "Ravi Kumar", phone: "+91 9848042002" },
-      category: { main: "Organic Products", sub: "Fertiliser" },
-      Bussiness: { type: "Manufacturer" },
-      location: { city: "Hyderabad", pincode: "500001", state: "Telangana" },
-      source: { type: "Local Visit", addedBy: "Admin" },
-      update: { date: "17 Sep 2025", by: "Sumit" },
+  useEffect(() => {
+    dispatch(fetchCorporateVisitors());
+  }, [dispatch]);
+
+  const formatDateTime = (isoString) => {
+    if (!isoString) return "N/A";
+    const date = new Date(isoString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = date.toLocaleString("en-GB", { month: "short" });
+    const year = date.getFullYear().toString().slice(-2);
+    const time = date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    return `${day} ${month} ${year} | ${time}`;
+  };
+  // ✅ Redux data ko table format mein convert karo
+  const rows = (corporateVisitors || []).map((v) => ({
+    regId: { no: v.registrationId || "N/A" },
+    _id: v._id,
+    checkbox: true,
+    company: { name: v.companyName || "", email: v.industrySector || "" },
+    contact: {
+      person:
+        `${v.firstName || ""} ${v.lastName || ""} | ${v.designation || ""} | ${v.mobile || ""} `.trim(),
     },
-    {
-      checkbox: true,
-      company: { name: "AgriLabs Pvt. Ltd", email: "info@agrilabs.com" },
-      contact: { person: "Neha Sharma", phone: "+91 9876543210" },
-      category: { main: "Dairy", sub: "Milk Testing" },
-      Bussiness: { type: "Manufacturer" },
-      location: { city: "Delhi", pincode: "110001", state: "Delhi" },
-      source: { type: "Referral", addedBy: "Ramesh" },
-      update: { date: "12 Sep 2025", by: "Anita" },
+    status: { text: v.status || "" },
+    industry: { sector: v.industrySector || "" },
+    location: {
+      city: ` ${v.city || ""} |
+      ${v.state || ""}`,
     },
-    {
-      checkbox: true,
-      company: { name: "FreshFarms Ltd", email: "contact@freshfarms.com" },
-      contact: { person: "Amit Verma", phone: "+91 9123456789" },
-      category: { main: "Vegetables", sub: "Export Quality" },
-      Bussiness: { type: "Manufacturer" },
-      location: { city: "Mumbai", pincode: "400001", state: "Maharashtra" },
-      source: { type: "Exhibition", addedBy: "Seema" },
-      update: { date: "05 Sep 2025", by: "Ravi" },
+    b2b: { meeting: v.b2bMeeting || "" },
+    whatsapp: { updates: v.whatsappUpdates || "" },
+    meta: {
+      createdBy: v.created_by
+        ? `${v.created_by} | ${formatDateTime(v.createdAt)}`
+        : formatDateTime(v.createdAt),
+      updatedBy: v.updated_by
+        ? `${v.updated_by} | ${formatDateTime(v.updatedAt)}`
+        : formatDateTime(v.updatedAt),
     },
+    _original: v, // full data for overview
+  }));
+
+  const columns = [
+    { label: "Registration ID", accessor: "regId.no" },
     {
-      checkbox: true,
-      company: { name: "BioCrop Sciences", email: "support@biocrop.com" },
-      contact: { person: "Priya Mehta", phone: "+91 9812345678" },
-      category: { main: "Seeds", sub: "Hybrid Seeds" },
-      Bussiness: { type: "Manufacturer" },
-      location: { city: "Ahmedabad", pincode: "380001", state: "Gujarat" },
-      source: { type: "Conference", addedBy: "Karan" },
-      update: { date: "10 Aug 2025", by: "Deepak" },
+      label: "Visitor Details",
+      accessor: "contact.person",
+      // linkTo: (row) => `/general-visitors/${row._id}`,
+      render: (value, row) => (
+        <Link
+          to={`/webVisitorData/visitorDetails/${row.id}`} // use row.id
+          className="text-blue-500 hover:underline"
+        >
+          {value}
+        </Link>
+      ),
     },
-    {
-      checkbox: true,
-      company: { name: "GreenHarvest Pvt Ltd", email: "info@greenharvest.com" },
-      contact: { person: "Suresh Patel", phone: "+91 9876500000" },
-      category: { main: "Fruits", sub: "Organic Mangoes" },
-      Bussiness: { type: "Exporter" },
-      location: { city: "Pune", pincode: "411001", state: "Maharashtra" },
-      source: { type: "Trade Fair", addedBy: "Ritika" },
-      update: { date: "20 Jul 2025", by: "Alok" },
-    },
-    {
-      checkbox: true,
-      company: { name: "NutriAgro Foods", email: "contact@nutriagro.com" },
-      contact: { person: "Vikas Singh", phone: "+91 9999998888" },
-      category: { main: "Processed Foods", sub: "Snacks" },
-      Bussiness: { type: "Supplier" },
-      location: { city: "Lucknow", pincode: "226001", state: "Uttar Pradesh" },
-      source: { type: "Website", addedBy: "Manish" },
-      update: { date: "02 Jul 2025", by: "Priya" },
-    },
-    {
-      checkbox: true,
-      company: { name: "AgroChem Labs", email: "sales@agrochem.com" },
-      contact: { person: "Kavita Rao", phone: "+91 9123456000" },
-      category: { main: "Chemicals", sub: "Pesticides" },
-      Bussiness: { type: "Distributor" },
-      location: { city: "Chennai", pincode: "600001", state: "Tamil Nadu" },
-      source: { type: "Dealer Network", addedBy: "Rohit" },
-      update: { date: "18 Jun 2025", by: "Sonal" },
-    },
-    {
-      checkbox: true,
-      company: { name: "Healthy Harvesters", email: "info@healthyharvest.com" },
-      contact: { person: "Arjun Kapoor", phone: "+91 9012345678" },
-      category: { main: "Grains", sub: "Organic Wheat" },
-      Bussiness: { type: "Wholesaler" },
-      location: { city: "Jaipur", pincode: "302001", state: "Rajasthan" },
-      source: { type: "Cold Call", addedBy: "Meena" },
-      update: { date: "05 May 2025", by: "Raj" },
-    },
+    { label: "Company Name", accessor: "company.name" },
+    { label: "Industry", accessor: "company.email" },
+    { label: "Status", accessor: "status.text" },
+    { label: "Industry/Sector", accessor: "industry.sector" },
+    { label: "City & State", accessor: "location.city" },
+    { label: "Created By", accessor: "meta.createdBy" },
+    { label: "Updated By", accessor: "meta.updatedBy" },
   ];
 
   const handleClientClick = (clientData) => {
-    setSelectedClient(clientData);
+    setSelectedClient(clientData._original || clientData);
   };
 
   const handleBackClick = () => {
@@ -128,54 +98,121 @@ const CorporateVisitorsList = () => {
   return (
     <div className="w-full h-auto bg-[#eef1f5]">
       {selectedClient ? (
-        // When a client is selected, show only the ClientOverview component
         <ClientOverview client={selectedClient} onBack={handleBackClick} />
       ) : (
-        // When no client is selected, show the list and the Textarea below it
         <>
-          <div className="w-full bg-white shadow-md  mb-5">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between px-4 py-1">
-              <h1 className="text-xl  text-gray-700 mb-2 lg:mb-0 uppercase">
-                Web Visitor Data 2025
+          <div className="w-full bg-white">
+            <div className="w-full bg-white  flex flex-col sm:flex-row justify-between items-center px-4 py-1 mb-3">
+              <h1 className="text-xl text-gray-500 mb-2 lg:mb-0 uppercase">
+                Web Visitor Data 2026
               </h1>
             </div>
           </div>
-          <div className="w-full bg-white mx-4 my-4 pb-1">
-            <div className="flex justify-between pr-4 pt-1">
-              <h1 className="text-lg text-[#4f5a67] pl-4 pt-1 font-semibold uppercase">
+
+          <div className=" bg-white mx-3 p-2 rounded shadow-sm">
+            <div className="flex justify-between items-center pr-4 pt-2">
+              <h1 className="text-base font-normal text-gray-800 px-4 uppercase">
                 Corporate Visitor List
+                {loading && (
+                  <span className="text-sm font-normal text-gray-400 ml-2">
+                    Loading...
+                  </span>
+                )}
               </h1>
-              <div className="flex flex-wrap justify-start md:justify-end gap-2 mb-1">
-                <button className="bg-[#337ab7] hover:bg-[#286090] text-white px-2.5 py-1  text-sm font-medium">
-                  Add New Lead
-                </button>
-                <button className="bg-[#337ab7] hover:bg-[#286090] text-white px-2.5 py-1  text-sm font-medium">
-                  Warm Client
-                </button>
-                <button className="bg-[#337ab7] hover:bg-[#286090] text-white px-2.5 py-1  text-sm font-medium">
-                  Hot Client
-                </button>
-                <button className="bg-[#337ab7] hover:bg-[#286090] text-white px-2.5 py-1  text-sm font-medium">
-                  Confirm Client
-                </button>
-                <button className="bg-[#337ab7] hover:bg-[#286090] text-white px-2.5 py-1  text-sm font-medium">
-                  Cold Client
-                </button>
-                <button className="bg-[#337ab7] hover:bg-[#286090] text-white px-2.5 py-1  text-sm font-medium">
-                  Raw Data List
-                </button>
-              </div>
             </div>
             <hr className="opacity-10 mb-2" />
-            <div className="text-xs">
-              <Globallytable
-                rows={rows}
-                colomns={columns}
-                onRowClick={handleClientClick}
-              />
-            </div>
-            <div className="mx-6 ">
-              <UploaderTextarea />
+
+            {loading ? (
+              <div className="text-center py-8 text-gray-400">
+                Loading corporate visitors...
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                No corporate visitors found.
+              </div>
+            ) : (
+              <div className="text-xs">
+                <VisitorGloballytable
+                  rows={rows}
+                  colomns={columns}
+                  onRowClick={handleClientClick}
+                />
+              </div>
+            )}
+
+            <div className="flex justify-between items-center flex-wrap gap-2 mt-2">
+              {/* Left — Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-1.5 text-xs font-medium bg-[#3598dc] hover:bg-[#276b99] text-white"
+                >
+                  RESEND VISITOR PASS
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-1.5 text-xs font-medium bg-[#3598dc] hover:bg-[#276b99] text-white"
+                >
+                  SENT
+                </button>
+                <Link
+                  to="/history"
+                  className="px-4 py-1.5 text-xs font-medium bg-[#3598dc] hover:bg-[#276b99] text-white flex items-center"
+                >
+                  HISTORY
+                </Link>
+              </div>
+
+              {/* Right — Radio Options ✅ fix 3 — map hata diya */}
+              <div className="flex flex-wrap gap-2">
+                <label className="flex items-center gap-1.5 px-2 h-8 bg-gray-100 border border-gray-400 text-xs text-black cursor-pointer hover:bg-gray-200">
+                  <input
+                    type="radio"
+                    name="options"
+                    value="Send Details"
+                    checked={open === "Send Details"}
+                    onChange={() => handle("Send Details")}
+                    className="accent-[#3598dc]"
+                  />
+                  Send Details
+                </label>
+
+                <label className="flex items-center gap-1.5 px-2 h-8 bg-gray-100 border border-gray-400 text-xs text-black cursor-pointer hover:bg-gray-200">
+                  <input
+                    type="radio"
+                    name="options"
+                    value="Office Location"
+                    checked={open === "Office Location"}
+                    onChange={() => handle("Office Location")}
+                    className="accent-[#3598dc]"
+                  />
+                  Office Location
+                </label>
+
+                <label className="flex items-center gap-1.5 px-2 h-8 bg-gray-100 border border-gray-400 text-xs text-black cursor-pointer hover:bg-gray-200">
+                  <input
+                    type="radio"
+                    name="options"
+                    value="Venue Location"
+                    checked={open === "Venue Location"}
+                    onChange={() => handle("Venue Location")}
+                    className="accent-[#3598dc]"
+                  />
+                  Venue Location
+                </label>
+
+                <label className="flex items-center gap-1.5 px-2 h-8 bg-gray-100 border border-gray-400 text-xs text-black cursor-pointer hover:bg-gray-200">
+                  <input
+                    type="radio"
+                    name="options"
+                    value="Visitor Pass"
+                    checked={open === "Visitor Pass"}
+                    onChange={() => handle("Visitor Pass")}
+                    className="accent-[#3598dc]"
+                  />
+                  Visitor Pass
+                </label>
+              </div>
             </div>
           </div>
         </>

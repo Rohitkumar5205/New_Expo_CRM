@@ -27,7 +27,7 @@ const NewLeadList = () => {
           to={`/clientOverview1/${row.id}`} // use row.id
           className="text-blue-500 hover:underline"
         >
-          {value} {/* value = company name */}
+          {value} 
         </Link>
       ),
     },
