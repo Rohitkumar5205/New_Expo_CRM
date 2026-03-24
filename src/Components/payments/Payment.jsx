@@ -23,7 +23,7 @@ const Payments = ({ client, onBack }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
-  const added_By = localStorage.getItem("user_name");
+  const added_By = sessionStorage.getItem("user_name");
   const emptyFormData = {
     pymtAgainst: "",
     invoice_id: "",

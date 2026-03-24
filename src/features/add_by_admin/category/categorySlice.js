@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { createActivityLogThunk } from "../../activityLog/activityLogSlice";
 
-// Base API URL
-// const API_URL = "http://localhost:5000/api/crm-exhibitor-categories";
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 // **Async Thunks**
@@ -12,12 +11,18 @@ export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/crm-exhibitor-categories`);
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get(`${BASE_URL}/crm-exhibitor-categories`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 // GET category by ID
@@ -25,61 +30,163 @@ export const fetchCategoryById = createAsyncThunk(
   "categories/fetchCategoryById",
   async (id, { rejectWithValue }) => {
     try {
+      const token = sessionStorage.getItem("token");
       const response = await axios.get(
-        `${BASE_URL}/crm-exhibitor-categories/${id}`
+        `${BASE_URL}/crm-exhibitor-categories/${id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 // CREATE category
 export const createCategory = createAsyncThunk(
   "categories/createCategory",
-  async (categoryData, { rejectWithValue }) => {
+  async (categoryData, { dispatch, rejectWithValue }) => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return rejectWithValue("No token provided");
     try {
       const response = await axios.post(
         `${BASE_URL}/crm-exhibitor-categories`,
-        categoryData
+        categoryData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
+
+      // Get user info securely from sessionStorage
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Category '${response.data.cat_name}' created by ${userName}`,
+            link: `/add-category`,
+            section: "Category",
+            data: {
+              action: "CREATE",
+              category_id: response.data._id,
+              created_data: response.data,
+            },
+          }),
+        );
+      }
+
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 // UPDATE category
 export const updateCategory = createAsyncThunk(
   "categories/updateCategory",
-  async ({ id, updates }, { rejectWithValue }) => {
+  async ({ id, updates }, { dispatch, rejectWithValue }) => {
     try {
+      const token = sessionStorage.getItem("token");
       const response = await axios.put(
         `${BASE_URL}/crm-exhibitor-categories/${id}`,
-        updates
+        updates,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
+
+      // Log Activity for update
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Category '${updates.cat_name || response.data.cat_name || id}' updated by ${userName}`,
+            link: `/add-category`,
+            section: "Category",
+            data: {
+              action: "UPDATE",
+              category_id: id,
+              updated_fields: updates,
+              updated_data: response.data,
+            },
+          }),
+        );
+      }
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 // DELETE category
 export const deleteCategory = createAsyncThunk(
   "categories/deleteCategory",
-  async (id, { rejectWithValue }) => {
+  async (id, { dispatch, getState, rejectWithValue }) => {
     try {
+      const token = sessionStorage.getItem("token");
+
+      // Get category details before deleting
+      const { categories } = getState().categories;
+      const categoryToDelete = categories.find((c) => c._id === id);
+
       const response = await axios.delete(
-        `${BASE_URL}/crm-exhibitor-categories/${id}`
+        `${BASE_URL}/crm-exhibitor-categories/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
-      return response.data; // backend might return an object
+
+      // Log Activity
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Category '${categoryToDelete?.cat_name || id}' deleted by ${userName}`,
+            link: `/add-category`,
+            section: "Category",
+            data: {
+              action: "DELETE",
+              category_id: id,
+              deleted_data: categoryToDelete || {},
+            },
+          }),
+        );
+      }
+
+      return id; // Return ID to remove from state
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 // **Initial State**
@@ -136,7 +243,7 @@ const categorySlice = createSlice({
       .addCase(updateCategory.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.categories.findIndex(
-          (c) => c._id === action.payload._id
+          (c) => c._id === action.payload._id,
         );
         if (index !== -1) state.categories[index] = action.payload;
       })

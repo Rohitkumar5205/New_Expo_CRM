@@ -1,88 +1,191 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { createActivityLogThunk } from "../../activityLog/activityLogSlice";
 
-// const API_URL = "http://localhost:5000/api/status-option";
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-// 🔹 CREATE Status Option
-export const createStatusOption = createAsyncThunk(
-  "statusOptions/create",
-  async (data, { rejectWithValue }) => {
-    try {
-      const res = await axios.post(`${BASE_URL}/status-option`, data);
-      return res.data.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
-    }
-  }
-);
-
-// 🔹 GET ALL Status Options
+// ✅ Fetch All Status Options
 export const fetchStatusOptions = createAsyncThunk(
   "statusOptions/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${BASE_URL}/status-option`);
+      const token = sessionStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/status-option`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// 🔹 UPDATE Status Option
+// ✅ Create Status Option
+export const createStatusOption = createAsyncThunk(
+  "statusOptions/create",
+  async (data, { dispatch, rejectWithValue }) => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return rejectWithValue("No token provided");
+
+    try {
+      const res = await axios.post(`${BASE_URL}/status-option`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      // ✅ res.data.data ya res.data — dono handle karo
+      const created = res.data.data || res.data;
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Status '${created.name || ""}' created by ${userName}`,
+            link: `/status-option`,
+            section: "statusOptions",
+            data: {
+              action: "CREATE",
+              status_id: created._id,
+              name: created.name,
+              created_data: created,
+            },
+          }),
+        );
+      }
+
+      return created;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  },
+);
+
+// ✅ Update Status Option
 export const updateStatusOption = createAsyncThunk(
   "statusOptions/update",
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, data }, { dispatch, rejectWithValue }) => {
     try {
-      const res = await axios.put(`${BASE_URL}/status-option/${id}`, data);
-      return res.data.data;
+      const token = sessionStorage.getItem("token");
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      // ✅ updated_by add karo
+      const dataWithUser = {
+        ...data,
+        updated_by: userId || null,
+      };
+
+      const res = await axios.put(
+        `${BASE_URL}/status-option/${id}`,
+        dataWithUser,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const updated = res.data.data || res.data;
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Status '${updated.name || data.name || id}' updated by ${userName}`,
+            link: `/status-option`,
+            section: "statusOptions",
+            data: {
+              action: "UPDATE",
+              status_id: id,
+              name: updated.name || data.name,
+              updated_fields: data,
+              updated_data: updated,
+            },
+          }),
+        );
+      }
+
+      return updated;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// 🔹 DELETE Status Option
+// ✅ Delete Status Option
 export const deleteStatusOption = createAsyncThunk(
   "statusOptions/delete",
-  async (id, { rejectWithValue }) => {
+  async (id, { dispatch, getState, rejectWithValue }) => {
     try {
-      const res = await axios.delete(`${BASE_URL}/status-option/${id}`);
-      return id; // return ID only to simplify filtering
+      const token = sessionStorage.getItem("token");
+
+      const { statusOptions } = getState().statusOptions;
+      const statusToDelete = statusOptions.find((s) => s._id === id);
+
+      await axios.delete(`${BASE_URL}/status-option/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Status '${statusToDelete?.name || id}' deleted by ${userName}`,
+            link: `/status-option`,
+            section: "statusOptions",
+            data: {
+              action: "DELETE",
+              status_id: id,
+              name: statusToDelete?.name,
+              deleted_data: statusToDelete || {},
+            },
+          }),
+        );
+      }
+
+      return id;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// ================= SLICE =================
+const initialState = {
+  statusOptions: [],
+  loading: false,
+  error: null,
+};
+
 const statusOptionSlice = createSlice({
   name: "statusOptions",
-  initialState: {
-    statusOptions: [],
-    loading: false,
-    error: null,
+  initialState,
+  reducers: {
+    clearStatusError: (state) => {
+      state.error = null;
+    },
   },
-  reducers: {},
   extraReducers: (builder) => {
     builder
-      // CREATE
-      .addCase(createStatusOption.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(createStatusOption.fulfilled, (state, action) => {
-        state.loading = false;
-        state.statusOptions.push(action.payload);
-      })
-      .addCase(createStatusOption.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // FETCH ALL
+      // Fetch All
       .addCase(fetchStatusOptions.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchStatusOptions.fulfilled, (state, action) => {
         state.loading = false;
@@ -93,29 +196,46 @@ const statusOptionSlice = createSlice({
         state.error = action.payload;
       })
 
-      // UPDATE
+      // Create
+      .addCase(createStatusOption.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createStatusOption.fulfilled, (state, action) => {
+        state.loading = false;
+        state.statusOptions.push(action.payload);
+      })
+      .addCase(createStatusOption.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Update
       .addCase(updateStatusOption.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(updateStatusOption.fulfilled, (state, action) => {
         state.loading = false;
-        state.statusOptions = state.statusOptions.map((item) =>
-          item._id === action.payload._id ? action.payload : item
+        const index = state.statusOptions.findIndex(
+          (item) => item._id === action.payload._id,
         );
+        if (index !== -1) state.statusOptions[index] = action.payload;
       })
       .addCase(updateStatusOption.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // DELETE
+      // Delete
       .addCase(deleteStatusOption.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(deleteStatusOption.fulfilled, (state, action) => {
         state.loading = false;
         state.statusOptions = state.statusOptions.filter(
-          (item) => item._id !== action.payload
+          (item) => item._id !== action.payload,
         );
       })
       .addCase(deleteStatusOption.rejected, (state, action) => {
@@ -125,4 +245,5 @@ const statusOptionSlice = createSlice({
   },
 });
 
+export const { clearStatusError } = statusOptionSlice.actions;
 export default statusOptionSlice.reducer;

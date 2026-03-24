@@ -18,6 +18,7 @@ import performaInvoiceReducer from "../features/performaInvoice/performaInvoiceS
 import invoiceReducer from "../features/invoice/invoiceSlice";
 import creditNoteReducer from "../features/creditNote/creditNoteSlice";
 import paymentReducer from "../features/payment/paymentSlice";
+import activityLogReducer from "../features/activityLog/activityLogSlice";
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +26,7 @@ export const store = configureStore({
     categories: categoryReducer,
     natures: natureReducer,
     countries: countryReducer,
+    activityLog: activityLogReducer,
     states: stateReducer,
     cities: cityReducer,
     dataSources: dataSourceReducer,
@@ -32,7 +34,7 @@ export const store = configureStore({
     companies: companyReducer,
     statusOptions: statusOptionReducer,
     banks: bankReducer,
-    crm_messages: crmMessageReducer,
+    crmMessages: crmMessageReducer,
     auth: authReducer,
     reviews: crmExhibatorReviewReducer,
     estimates: estimateReducer,

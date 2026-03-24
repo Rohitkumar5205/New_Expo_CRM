@@ -13,7 +13,7 @@ import { showError, showSuccess } from "../../utils/toastMessage";
 const AddCategory = () => {
   const dispatch = useDispatch();
   const { categories = [], loading: isLoading } = useSelector(
-    (state) => state.categories
+    (state) => state.categories,
   );
   const [editingCategory, setEditingCategory] = useState(null);
   const [formData, setFormData] = useState({ name: "", status: "Active" });
@@ -43,7 +43,7 @@ const AddCategory = () => {
     try {
       if (editingCategory) {
         await dispatch(
-          updateCategory({ id: editingCategory._id, updates: categoryData })
+          updateCategory({ id: editingCategory._id, updates: categoryData }),
         ).unwrap();
         showSuccess("Category updated successfully!");
       } else {
@@ -51,7 +51,9 @@ const AddCategory = () => {
           categories.length > 0
             ? Math.max(...categories.map((c) => c.cat_id || 0)) + 1
             : 1;
-        await dispatch(createCategory({ ...categoryData, cat_id: newId })).unwrap();
+        await dispatch(
+          createCategory({ ...categoryData, cat_id: newId }),
+        ).unwrap();
         showSuccess("Category added successfully!");
       }
       resetForm();
@@ -114,7 +116,7 @@ const AddCategory = () => {
                 onChange={handleChange}
                 placeholder="Enter category name"
                 className="w-full border border-gray-300 px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
-              required
+                required
               />
             </div>
 
@@ -131,8 +133,7 @@ const AddCategory = () => {
                     value="Active"
                     checked={formData.status === "Active"}
                     onChange={handleChange}
-                 
-                 />
+                  />
                   Active
                 </label>
                 <label className="flex items-center gap-2 text-gray-700">

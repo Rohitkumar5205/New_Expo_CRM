@@ -1,180 +1,276 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { createActivityLogThunk } from "../../activityLog/activityLogSlice";
 
-// const API_URL = "http://localhost:5000/api/crm-messages";
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-/* ==========================================
-   🟢 1️⃣ Get all messages
-========================================== */
-export const fetchCrmMessages = createAsyncThunk(
-  "crm_messages/fetchAll",
-  async (_, thunkAPI) => {
+// ✅ Fetch All Messages
+export const fetchMessages = createAsyncThunk(
+  "crmMessages/fetchAll",
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${BASE_URL}/crm-messages`);
-      return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to fetch messages"
-      );
-    }
-  }
-);
-
-/* ==========================================
-   🟢 2️⃣ Add new message (FormData compatible)
-========================================== */
-export const addCrmMessage = createAsyncThunk(
-  "crm_messages/add",
-  async (msgData, thunkAPI) => {
-    try {
-      // msgData should be FormData
-      const response = await axios.post(`${BASE_URL}/crm-messages`, msgData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get(`${BASE_URL}/crm-messages`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to add message"
-      );
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-/* ==========================================
-   🟢 3️⃣ Update message (FormData compatible)
-========================================== */
-export const updateCrmMessage = createAsyncThunk(
-  "crm_messages/update",
-  async ({ id, updatedData }, thunkAPI) => {
+// ✅ Fetch Single Message by ID
+export const fetchMessageById = createAsyncThunk(
+  "crmMessages/fetchById",
+  async (id, { rejectWithValue }) => {
     try {
+      const token = sessionStorage.getItem("token");
+      const response = await axios.get(`${BASE_URL}/crm-messages/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  },
+);
+
+// ✅ Create New Message (FormData — file upload support)
+export const createMessage = createAsyncThunk(
+  "crmMessages/create",
+  async (formData, { dispatch, rejectWithValue }) => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return rejectWithValue("No token provided");
+
+    try {
+      const response = await axios.post(`${BASE_URL}/crm-messages`, formData, {
+        headers: {
+          // Content-Type set mat karo — axios khud multipart set karega
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `WhatsApp Message '${response.data.msg_name || ""}' created by ${userName}`,
+            link: `/crm-messages/${response.data._id}`,
+            section: "crmMessages",
+            data: {
+              action: "CREATE",
+              message_id: response.data._id,
+              msg_name: response.data.msg_name,
+              created_data: response.data,
+            },
+          }),
+        );
+      }
+
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  },
+);
+
+// ✅ Update Existing Message (FormData — file upload support)
+export const updateMessage = createAsyncThunk(
+  "crmMessages/update",
+  async ({ id, formData }, { dispatch, rejectWithValue }) => {
+    try {
+      const token = sessionStorage.getItem("token");
       const response = await axios.put(
         `${BASE_URL}/crm-messages/${id}`,
-        updatedData,
+        formData,
         {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
-      return response.data.data || response.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to update message"
-      );
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `WhatsApp Message '${response.data.msg_name || id}' updated by ${userName}`,
+            link: `/crm-messages/${id}`,
+            section: "crmMessages",
+            data: {
+              action: "UPDATE",
+              message_id: id,
+              msg_name: response.data.msg_name,
+              updated_data: response.data,
+            },
+          }),
+        );
+      }
+
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-/* ==========================================
-   🟢 4️⃣ Delete message
-========================================== */
-export const deleteCrmMessage = createAsyncThunk(
-  "crm_messages/delete",
-  async (id, thunkAPI) => {
+// ✅ Delete Message
+export const deleteMessage = createAsyncThunk(
+  "crmMessages/delete",
+  async (id, { dispatch, getState, rejectWithValue }) => {
     try {
-      await axios.delete(`${BASE_URL}/crm-messages/${id}`);
+      const token = sessionStorage.getItem("token");
+
+      const { messages } = getState().crmMessages;
+      const messageToDelete = messages.find((m) => m._id === id);
+
+      await axios.delete(`${BASE_URL}/crm-messages/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `WhatsApp Message '${messageToDelete?.msg_name || id}' deleted by ${userName}`,
+            link: `/crm-messages`,
+            section: "crmMessages",
+            data: {
+              action: "DELETE",
+              message_id: id,
+              msg_name: messageToDelete?.msg_name,
+              deleted_data: messageToDelete || {},
+            },
+          }),
+        );
+      }
+
       return id;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to delete message"
-      );
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
+
+const initialState = {
+  messages: [],
+  loading: false,
+  error: null,
+};
 
 const crmMessageSlice = createSlice({
-  name: "crm_messages",
-  initialState: {
-    crm_messages: [],
-    item: null,
-    loading: false,
-    error: null,
-    success: null,
-    status: "idle",
-  },
+  name: "crmMessages",
+  initialState,
   reducers: {
-    clearMessages: (state) => {
+    clearMessageError: (state) => {
       state.error = null;
-      state.success = null;
-      state.status = "idle";
     },
   },
   extraReducers: (builder) => {
     builder
-      // 🟡 Fetch
-      .addCase(fetchCrmMessages.pending, (state) => {
+      // Fetch All
+      .addCase(fetchMessages.pending, (state) => {
         state.loading = true;
-        state.status = "loading";
+        state.error = null;
       })
-      .addCase(fetchCrmMessages.fulfilled, (state, action) => {
+      .addCase(fetchMessages.fulfilled, (state, action) => {
         state.loading = false;
-        state.status = "succeeded";
-        state.crm_messages = action.payload;
+        state.messages = action.payload;
       })
-      .addCase(fetchCrmMessages.rejected, (state, action) => {
+      .addCase(fetchMessages.rejected, (state, action) => {
         state.loading = false;
-        state.status = "failed";
         state.error = action.payload;
       })
 
-      // 🟢 Add
-      .addCase(addCrmMessage.pending, (state) => {
+      // Fetch Single
+      .addCase(fetchMessageById.pending, (state) => {
         state.loading = true;
-        state.status = "loading";
+        state.error = null;
       })
-      .addCase(addCrmMessage.fulfilled, (state, action) => {
+      .addCase(fetchMessageById.fulfilled, (state, action) => {
         state.loading = false;
-        state.status = "succeeded";
-        state.crm_messages.unshift(action.payload);
-        state.success = "Message added successfully";
-      })
-      .addCase(addCrmMessage.rejected, (state, action) => {
-        state.loading = false;
-        state.status = "failed";
-        state.error = action.payload;
-      })
-
-      // 🟣 Update
-      .addCase(updateCrmMessage.pending, (state) => {
-        state.loading = true;
-        state.status = "loading";
-      })
-      .addCase(updateCrmMessage.fulfilled, (state, action) => {
-        state.loading = false;
-        state.status = "succeeded";
-
-        const updatedMsg = action.payload;
-        const index = state.crm_messages.findIndex(
-          (msg) => msg._id === updatedMsg._id
+        const index = state.messages.findIndex(
+          (m) => m._id === action.payload._id,
         );
-        if (index !== -1) state.crm_messages[index] = updatedMsg;
-        state.success = "Message updated successfully";
+        if (index !== -1) {
+          state.messages[index] = action.payload;
+        } else {
+          state.messages.push(action.payload);
+        }
       })
-      .addCase(updateCrmMessage.rejected, (state, action) => {
+      .addCase(fetchMessageById.rejected, (state, action) => {
         state.loading = false;
-        state.status = "failed";
         state.error = action.payload;
       })
 
-      // 🔴 Delete
-      .addCase(deleteCrmMessage.pending, (state) => {
+      // Create
+      .addCase(createMessage.pending, (state) => {
         state.loading = true;
-        state.status = "loading";
+        state.error = null;
       })
-      .addCase(deleteCrmMessage.fulfilled, (state, action) => {
+      .addCase(createMessage.fulfilled, (state, action) => {
         state.loading = false;
-        state.status = "succeeded";
-        state.crm_messages = state.crm_messages.filter(
-          (msg) => msg._id !== action.payload
+        state.messages.push(action.payload);
+      })
+      .addCase(createMessage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Update
+      .addCase(updateMessage.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateMessage.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.messages.findIndex(
+          (m) => m._id === action.payload._id,
         );
-        state.success = "Message deleted successfully";
+        if (index !== -1) state.messages[index] = action.payload;
       })
-      .addCase(deleteCrmMessage.rejected, (state, action) => {
+      .addCase(updateMessage.rejected, (state, action) => {
         state.loading = false;
-        state.status = "failed";
+        state.error = action.payload;
+      })
+
+      // Delete
+      .addCase(deleteMessage.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteMessage.fulfilled, (state, action) => {
+        state.loading = false;
+        state.messages = state.messages.filter((m) => m._id !== action.payload);
+      })
+      .addCase(deleteMessage.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       });
   },
 });
 
-export const { clearMessages } = crmMessageSlice.actions;
+export const { clearMessageError } = crmMessageSlice.actions;
 export default crmMessageSlice.reducer;

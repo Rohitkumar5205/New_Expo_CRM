@@ -18,7 +18,7 @@ export const loginUser = createAsyncThunk(
       );
 
       // Save username for resend OTP
-      // localStorage.setItem("user_name", user_name);
+      // sessionStorage.setItem("user_name", user_name);
 
       // sessionStorage use karo
       sessionStorage.setItem("user_name", user_name);

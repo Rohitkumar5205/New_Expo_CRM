@@ -86,7 +86,7 @@ const AddEvent = () => {
   const dispatch = useDispatch();
   const [editingStatus, setEditingStatus] = useState(null);
 
-  const addedBy = localStorage.getItem("user_name") || "";
+  const addedBy = sessionStorage.getItem("user_name") || "";
   const [formData, setFormData] = useState({
     event_name: "",
     status: "Active",
@@ -119,6 +119,8 @@ const AddEvent = () => {
   const { countries } = useSelector((state) => state.countries);
   const { states } = useSelector((state) => state.states);
   const { cities } = useSelector((state) => state.cities);
+  console.log("cities", cities);
+  console.log("countries...", countries);
 
   useEffect(() => {
     dispatch(fetchEvents());
@@ -199,7 +201,7 @@ const AddEvent = () => {
       (item) =>
         (item?.event_name || "").trim().toLowerCase() ===
           trimmedName.toLowerCase() &&
-        (!editingStatus || item._id !== editingStatus._id)
+        (!editingStatus || item._id !== editingStatus._id),
     );
     if (duplicate) {
       showError("An event with that name already exists!");
@@ -218,13 +220,13 @@ const AddEvent = () => {
       event_state: event_state,
       event_city: event_city,
       event_pincode: event_pincode,
-      added_by: added_by || localStorage.getItem("user_name") || "System",
+      added_by: added_by || sessionStorage.getItem("user_name") || "System",
     };
 
     try {
       if (editingStatus) {
         await dispatch(
-          updateEvent({ id: editingStatus._id, updates: eventData })
+          updateEvent({ id: editingStatus._id, updates: eventData }),
         ).unwrap();
         showSuccess("Event updated successfully!");
       } else {
@@ -307,14 +309,14 @@ const AddEvent = () => {
     if (searchText && searchText.trim()) {
       const s = searchText.trim().toLowerCase();
       list = list.filter((item) =>
-        (item?.event_name || "").toLowerCase().includes(s)
+        (item?.event_name || "").toLowerCase().includes(s),
       );
     }
     if (statusFilter === "Active" || statusFilter === "Inactive") {
       list = list.filter(
         (item) =>
           (item?.event_status || "").toLowerCase() ===
-          statusFilter.toLowerCase()
+          statusFilter.toLowerCase(),
       );
     }
     const { key, dir } = sortBy;
@@ -337,7 +339,7 @@ const AddEvent = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAndSortedStatusOptions.length / rowsPerPage)
+    Math.ceil(filteredAndSortedStatusOptions.length / rowsPerPage),
   );
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -387,14 +389,14 @@ const AddEvent = () => {
         {/* Add/Edit Status Section */}
         <div className="bg-white mb-5" style={{ border: "1px solid #ddd" }}>
           <div
-            className="px-5 py-3"
+            className="px-5 py-2"
             style={{
               backgroundColor: "#f9f9f9",
               borderBottom: "1px solid #ddd",
             }}
           >
             <h2
-              className="text-base font-semibold"
+              className="text-base font-medium"
               style={{ color: "#555", margin: 0 }}
             >
               {editingStatus ? "EDIT EVENT" : "ADD EVENT"}
@@ -540,7 +542,7 @@ const AddEvent = () => {
                   required
                 >
                   <option value="">Select City</option>
-                  {cities?.data?.map((city, i) => (
+                  {cities?.map((city, i) => (
                     <option key={city?._id || i} value={city?.name}>
                       {city?.name}
                     </option>
@@ -610,7 +612,7 @@ const AddEvent = () => {
               >
                 <button
                   onClick={handleAddEvent}
-                  className="px-6 py-2 text-sm text-white"
+                  className="px-6 py-1 text-sm text-white"
                   style={{
                     backgroundColor: "#5bc0de",
                     border: "none",
@@ -628,7 +630,7 @@ const AddEvent = () => {
                 <div style={{ display: "flex", alignItems: "flex-end" }}>
                   <button
                     onClick={resetForm}
-                    className="px-4 py-2 text-sm"
+                    className="px-4 py-1 text-sm"
                     style={{
                       backgroundColor: "#e0e0e0",
                       color: "#333",
@@ -786,7 +788,7 @@ const AddEvent = () => {
                     className="px-4 py-3 text-sm font-semibold text-center"
                     style={thStyle()}
                   >
-                     <div
+                    <div
                       style={{ display: "flex", alignItems: "center", gap: 8 }}
                     >
                       From Date
@@ -806,7 +808,7 @@ const AddEvent = () => {
                     className="px-4 py-3 text-sm font-semibold text-center"
                     style={thStyle()}
                   >
-                   <div
+                    <div
                       style={{ display: "flex", alignItems: "center", gap: 8 }}
                     >
                       To Date
@@ -934,7 +936,7 @@ const AddEvent = () => {
                       >
                         {statusItem?.event_toDate
                           ? new Date(
-                              statusItem.event_toDate
+                              statusItem.event_toDate,
                             ).toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "short",
@@ -949,7 +951,7 @@ const AddEvent = () => {
                       >
                         {statusItem?.event_fromDate
                           ? new Date(
-                              statusItem.event_fromDate
+                              statusItem.event_fromDate,
                             ).toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "short",
@@ -1043,7 +1045,7 @@ const AddEvent = () => {
               <strong style={{ color: "#333" }}>
                 {Math.min(
                   currentPage * rowsPerPage,
-                  filteredAndSortedStatusOptions.length
+                  filteredAndSortedStatusOptions.length,
                 )}
               </strong>{" "}
               of{" "}
@@ -1070,7 +1072,7 @@ const styles = {
   input: {
     border: "1px solid #d2d6de",
     borderRadius: 3,
-    padding: "8px 10px",
+    padding: "5px 10px",
     fontSize: 14,
     width: "100%",
     boxSizing: "border-box",
@@ -1097,13 +1099,13 @@ const styles = {
     fontSize: 13,
   },
   searchInput: {
-    padding: "8px 10px",
+    padding: "3px 10px",
     borderRadius: 3,
     border: "1px solid #d2d6de",
     width: 280,
   },
   clearBtn: {
-    padding: "8px 10px",
+    padding: "4px 10px",
     borderRadius: 3,
     border: "1px solid #ddd",
     backgroundColor: "#fff",
@@ -1111,7 +1113,7 @@ const styles = {
     fontSize: 13,
   },
   smallSelect: {
-    padding: "6px 8px",
+    padding: "3px 8px",
     borderRadius: 3,
     border: "1px solid #d2d6de",
   },

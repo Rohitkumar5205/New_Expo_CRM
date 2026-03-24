@@ -143,10 +143,10 @@ const AddTarget = () => {
   });
   const [targets, setTargets] = useState(() => {
     try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const raw = sessionStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch (e) {
-      console.warn("Failed to parse user targets from localStorage", e);
+      console.warn("Failed to parse user targets from sessionStorage", e);
     }
     return [
       { id: 1, user: "sumit mishra", target: 100, status: "Active" },
@@ -167,9 +167,9 @@ const AddTarget = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(targets));
+      sessionStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(targets));
     } catch (e) {
-      console.warn("Failed to save user targets to localStorage", e);
+      console.warn("Failed to save user targets to sessionStorage", e);
     }
   }, [targets]);
 
@@ -200,7 +200,7 @@ const AddTarget = () => {
     const duplicate = targets.find(
       (t) =>
         t.user.toLowerCase() === formData.user.toLowerCase() &&
-        (!editingTarget || t.id !== editingTarget.id)
+        (!editingTarget || t.id !== editingTarget.id),
     );
     if (duplicate) {
       showMessage("A target for this user already exists!");
@@ -217,8 +217,8 @@ const AddTarget = () => {
                 target: formData.target,
                 status: formData.status,
               }
-            : item
-        )
+            : item,
+        ),
       );
       showMessage("Target updated successfully!");
       resetForm();
@@ -276,7 +276,7 @@ const AddTarget = () => {
     if (searchText && searchText.trim()) {
       const s = searchText.trim().toLowerCase();
       list = list.filter(
-        (c) => c.user.toLowerCase().includes(s) || String(c.target).includes(s)
+        (c) => c.user.toLowerCase().includes(s) || String(c.target).includes(s),
       );
     }
     if (statusFilter === "Active" || statusFilter === "Inactive") {
@@ -302,7 +302,7 @@ const AddTarget = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAndSortedItems.length / rowsPerPage)
+    Math.ceil(filteredAndSortedItems.length / rowsPerPage),
   );
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -462,7 +462,7 @@ const AddTarget = () => {
                   style={{
                     backgroundColor: "#5bc0de",
                     border: "none",
-                    
+
                     cursor: "pointer",
                   }}
                   title={editingTarget ? "Update Target" : "Add Target"}
@@ -480,7 +480,7 @@ const AddTarget = () => {
                     style={{
                       backgroundColor: "#e0e0e0",
                       color: "#333",
-                      
+
                       border: "none",
                       cursor: "pointer",
                     }}
@@ -744,7 +744,6 @@ const AddTarget = () => {
                           style={{
                             backgroundColor:
                               item.status === "Active" ? "#337ab7" : "#d9534f",
-                            
                           }}
                         >
                           {item.status}
@@ -811,7 +810,7 @@ const AddTarget = () => {
               <strong style={{ color: "#333" }}>
                 {Math.min(
                   currentPage * rowsPerPage,
-                  filteredAndSortedItems.length
+                  filteredAndSortedItems.length,
                 )}
               </strong>{" "}
               of{" "}
@@ -855,7 +854,7 @@ const AddTarget = () => {
 const styles = {
   input: {
     border: "1px solid #d2d6de",
-    
+
     padding: "8px 10px",
     fontSize: 14,
     width: "100%",
@@ -871,19 +870,19 @@ const styles = {
     backgroundColor: "#f7f7f7",
     border: "1px solid #ddd",
     padding: "6px 10px",
-    
+
     cursor: "pointer",
     fontSize: 13,
   },
   searchInput: {
     padding: "8px 10px",
-    
+
     border: "1px solid #d2d6de",
     width: 280,
   },
   clearBtn: {
     padding: "8px 10px",
-    
+
     border: "1px solid #ddd",
     backgroundColor: "#fff",
     cursor: "pointer",
@@ -891,12 +890,12 @@ const styles = {
   },
   smallSelect: {
     padding: "6px 8px",
-    
+
     border: "1px solid #d2d6de",
   },
   iconBtn: {
     padding: 6,
-    
+
     border: "1px solid #ccc",
     backgroundColor: "white",
     cursor: "pointer",
@@ -912,7 +911,7 @@ const styles = {
     backgroundColor: "#e9f7ef",
     border: "1px solid #c7efd9",
     padding: "8px 12px",
-    
+
     marginBottom: 12,
     color: "#2f7a4b",
     display: "inline-block",
@@ -925,7 +924,7 @@ const styles = {
   pageBtn: {
     padding: "6px 9px",
     border: "1px solid #ddd",
-    
+
     cursor: "pointer",
     background: "white",
   },
@@ -980,7 +979,7 @@ const styles = {
   },
   modalBtn: {
     padding: "8px 12px",
-    
+
     cursor: "pointer",
     border: "none",
   },

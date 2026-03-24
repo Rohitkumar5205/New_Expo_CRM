@@ -1,85 +1,189 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { createActivityLogThunk } from "../../activityLog/activityLogSlice";
 
-// const API_URL = "http://localhost:5000/api/data-source";
 const BASE_URL = import.meta.env.VITE_API_URL;
-// 🔹 Fetch All Data Sources
+
+// ✅ Fetch All Data Sources
 export const fetchDataSources = createAsyncThunk(
   "dataSources/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${BASE_URL}/data-source`);
+      const token = sessionStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/data-source`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// 🔹 Fetch Single Data Source by ID
+// ✅ Fetch Single Data Source by ID
 export const fetchDataSourceById = createAsyncThunk(
   "dataSources/fetchById",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${BASE_URL}/data-source/${id}`);
+      const token = sessionStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/data-source/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// 🔹 Create New Data Source
+// ✅ Create New Data Source
 export const createDataSource = createAsyncThunk(
   "dataSources/create",
-  async (data, { rejectWithValue }) => {
+  async (data, { dispatch, rejectWithValue }) => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return rejectWithValue("No token provided");
+
     try {
-      const res = await axios.post(`${BASE_URL}/data-source`, data);
+      const res = await axios.post(`${BASE_URL}/data-source`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Data Source '${res.data.source_name || res.data.name || ""}' created by ${userName}`,
+            link: `/data-source`,
+            section: "dataSource",
+            data: {
+              action: "CREATE",
+              source_id: res.data._id,
+              source_name: res.data.source_name || res.data.name,
+              created_data: res.data,
+            },
+          }),
+        );
+      }
+
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// 🔹 Update Existing Data Source
+// ✅ Update Existing Data Source
 export const updateDataSource = createAsyncThunk(
   "dataSources/update",
-  async ({ id, updates }, { rejectWithValue }) => {
+  async ({ id, updates }, { dispatch, rejectWithValue }) => {
     try {
-      const res = await axios.put(`${BASE_URL}/data-source/${id}`, updates);
+      const token = sessionStorage.getItem("token");
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      // ✅ FIX: updated_by pehle add karo, phir API call karo
+      const updatesWithUser = {
+        ...updates,
+        updated_by: userId || null,
+      };
+
+      const res = await axios.put(
+        `${BASE_URL}/data-source/${id}`,
+        updatesWithUser, // ✅ updated_by ke saath bhejo
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Data Source '${res.data.source_name || id}' updated by ${userName}`,
+            link: `/data-source`,
+            section: "dataSource",
+            data: {
+              action: "UPDATE",
+              source_id: id,
+              source_name: res.data.source_name,
+              updated_fields: updates,
+              updated_data: res.data,
+            },
+          }),
+        );
+      }
+
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// 🔹 Delete Data Source
+// ✅ Delete Data Source
 export const deleteDataSource = createAsyncThunk(
   "dataSources/delete",
-  async (id, { rejectWithValue }) => {
+  async (id, { dispatch, getState, rejectWithValue }) => {
     try {
-      const response = await axios.delete(`${BASE_URL}/data-source/${id}`);
-      return response.data;
+      const token = sessionStorage.getItem("token");
+
+      const { dataSources } = getState().dataSources;
+      const sourceToDelete = dataSources.find((s) => s._id === id);
+
+      await axios.delete(`${BASE_URL}/data-source/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const userStr = sessionStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : {};
+      const userId = sessionStorage.getItem("user_id") || user._id;
+      const userName = user.name || "User";
+
+      if (userId) {
+        dispatch(
+          createActivityLogThunk({
+            user_id: userId,
+            message: `Data Source '${sourceToDelete?.source_name || sourceToDelete?.name || id}' deleted by ${userName}`,
+            link: `/data-source`,
+            section: "dataSource",
+            data: {
+              action: "DELETE",
+              source_id: id,
+              source_name: sourceToDelete?.source_name || sourceToDelete?.name,
+              deleted_data: sourceToDelete || {},
+            },
+          }),
+        );
+      }
+
+      // ✅ FIX: id return karo
+      return id;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
-// -----------------------------------------------------
-// Initial State
-// -----------------------------------------------------
 const initialState = {
   dataSources: [],
   loading: false,
   error: null,
 };
 
-// -----------------------------------------------------
-// Slice Definition
-// -----------------------------------------------------
 const dataSourceSlice = createSlice({
   name: "dataSources",
   initialState,
@@ -90,7 +194,7 @@ const dataSourceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // 🔸 FETCH ALL
+      // Fetch All
       .addCase(fetchDataSources.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -104,9 +208,31 @@ const dataSourceSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔸 CREATE
+      // Fetch Single
+      .addCase(fetchDataSourceById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchDataSourceById.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.dataSources.findIndex(
+          (s) => s._id === action.payload._id,
+        );
+        if (index !== -1) {
+          state.dataSources[index] = action.payload;
+        } else {
+          state.dataSources.push(action.payload);
+        }
+      })
+      .addCase(fetchDataSourceById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Create
       .addCase(createDataSource.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(createDataSource.fulfilled, (state, action) => {
         state.loading = false;
@@ -117,34 +243,33 @@ const dataSourceSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔸 UPDATE
+      // Update
       .addCase(updateDataSource.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(updateDataSource.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.dataSources.findIndex(
-          (item) => item._id === action.payload._id
+          (s) => s._id === action.payload._id,
         );
-        if (index !== -1) {
-          state.dataSources[index] = action.payload;
-        }
+        if (index !== -1) state.dataSources[index] = action.payload;
       })
       .addCase(updateDataSource.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // 🔸 DELETE
+      // Delete
       .addCase(deleteDataSource.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(deleteDataSource.fulfilled, (state, action) => {
         state.loading = false;
-        const deletedId =
-          action.payload?._id || action.payload?.deletedId || action.payload;
+        // ✅ FIX: direct id se filter
         state.dataSources = state.dataSources.filter(
-          (c) => c._id !== deletedId
+          (s) => s._id !== action.payload,
         );
       })
       .addCase(deleteDataSource.rejected, (state, action) => {

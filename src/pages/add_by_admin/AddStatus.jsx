@@ -132,7 +132,7 @@ const AddStatus = () => {
     const duplicate = (Array.isArray(statusOptions) ? statusOptions : []).find(
       (item) =>
         (item?.name || "").trim().toLowerCase() === trimmedName.toLowerCase() &&
-        (!editingStatus || item._id !== editingStatus._id)
+        (!editingStatus || item._id !== editingStatus._id),
     );
     if (duplicate) {
       showError("A status with that name already exists!");
@@ -147,7 +147,7 @@ const AddStatus = () => {
     try {
       if (editingStatus) {
         await dispatch(
-          updateStatusOption({ id: editingStatus._id, data: statusData })
+          updateStatusOption({ id: editingStatus._id, data: statusData }),
         ).unwrap();
         showSuccess("Status updated successfully!");
       } else {
@@ -200,13 +200,13 @@ const AddStatus = () => {
     if (searchText && searchText.trim()) {
       const s = searchText.trim().toLowerCase();
       list = list.filter((item) =>
-        (item?.name || "").toLowerCase().includes(s)
+        (item?.name || "").toLowerCase().includes(s),
       );
     }
     if (statusFilter === "Active" || statusFilter === "Inactive") {
       list = list.filter(
         (item) =>
-          (item?.status || "").toLowerCase() === statusFilter.toLowerCase()
+          (item?.status || "").toLowerCase() === statusFilter.toLowerCase(),
       );
     }
     const { key, dir } = sortBy;
@@ -229,7 +229,7 @@ const AddStatus = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAndSortedStatusOptions.length / rowsPerPage)
+    Math.ceil(filteredAndSortedStatusOptions.length / rowsPerPage),
   );
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -699,7 +699,7 @@ const AddStatus = () => {
               <strong style={{ color: "#333" }}>
                 {Math.min(
                   currentPage * rowsPerPage,
-                  filteredAndSortedStatusOptions.length
+                  filteredAndSortedStatusOptions.length,
                 )}
               </strong>{" "}
               of{" "}

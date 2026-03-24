@@ -9,7 +9,6 @@ import {
 } from "../../features/add_by_admin/banks/bankSlice";
 import { showError, showSuccess } from "../../utils/toastMessage";
 
-/** Simple Pagination component */
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   const pages = [];
   const start = Math.max(1, currentPage - 2);
@@ -17,62 +16,43 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   for (let p = start; p <= end; p++) pages.push(p);
 
   return (
-    <div style={styles.pagination}>
+    <div className="flex items-center gap-1.5">
       <button
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
-        style={{
-          ...styles.pageBtn,
-          ...(currentPage === 1 ? styles.disabledBtn : {}),
-        }}
+        className={`px-2 py-1 border border-gray-300 bg-white text-sm cursor-pointer ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         {"<<"}
       </button>
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        style={{
-          ...styles.pageBtn,
-          ...(currentPage === 1 ? styles.disabledBtn : {}),
-        }}
+        className={`px-2 py-1 border border-gray-300 bg-white text-sm cursor-pointer ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         {"<"}
       </button>
-
-      {start > 1 && <span style={styles.pageGap}>...</span>}
-
+      {start > 1 && <span className="px-1.5 text-gray-400">...</span>}
       {pages.map((p) => (
         <button
           key={p}
           onClick={() => onPageChange(p)}
-          style={{
-            ...styles.pageBtn,
-            ...(p === currentPage ? styles.activePageBtn : {}),
-          }}
+          className={`px-2 py-1 border text-sm cursor-pointer ${p === currentPage ? "bg-blue-500 text-white border-blue-600" : "border-gray-300 bg-white"}`}
         >
           {p}
         </button>
       ))}
-
-      {end < totalPages && <span style={styles.pageGap}>...</span>}
-
+      {end < totalPages && <span className="px-1.5 text-gray-400">...</span>}
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        style={{
-          ...styles.pageBtn,
-          ...(currentPage === totalPages ? styles.disabledBtn : {}),
-        }}
+        className={`px-2 py-1 border border-gray-300 bg-white text-sm cursor-pointer ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         {">"}
       </button>
       <button
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
-        style={{
-          ...styles.pageBtn,
-          ...(currentPage === totalPages ? styles.disabledBtn : {}),
-        }}
+        className={`px-2 py-1 border border-gray-300 bg-white text-sm cursor-pointer ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         {">>"}
       </button>
@@ -104,7 +84,6 @@ const AddBank = () => {
     loading: isLoading,
     error,
   } = useSelector((state) => state.banks) || {};
-  console.log("add banks data", banks);
 
   useEffect(() => {
     dispatch(fetchBanks());
@@ -112,13 +91,8 @@ const AddBank = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const resetForm = () => {
@@ -130,10 +104,11 @@ const AddBank = () => {
       status: "Active",
     });
     setEditingBank(null);
+    setErrors({});
   };
 
   const handleAddOrUpdateBank = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     const validationErrors = {};
     if (!formData.bankname.trim())
       validationErrors.bankname = "Bank Name is required.";
@@ -144,15 +119,8 @@ const AddBank = () => {
     } else if (!/^\d+$/.test(formData.accountno)) {
       validationErrors.accountno = "Account No. must contain only digits.";
     }
-    if (!formData.ifsccode.trim()) {
+    if (!formData.ifsccode.trim())
       validationErrors.ifsccode = "IFSC Code is required.";
-    }
-    /* ** Removed the following block as requested: 
-    {
-      validationErrors.ifsccode =
-        "Invalid IFSC Code format (e.g., SBIN0123456).";
-    }
-    */
     if (!formData.status) validationErrors.status = "Status is required.";
 
     if (Object.keys(validationErrors).length > 0) {
@@ -161,11 +129,12 @@ const AddBank = () => {
       return;
     }
     setErrors({});
+
     const trimmedAccountNo = formData.accountno.trim();
     const duplicate = (Array.isArray(banks) ? banks : []).find(
       (bank) =>
         (bank.accountno || "").trim() === trimmedAccountNo &&
-        (!editingBank || bank._id !== editingBank._id)
+        (!editingBank || bank._id !== editingBank._id),
     );
     if (duplicate) {
       showError("A bank with that account number already exists!");
@@ -175,7 +144,7 @@ const AddBank = () => {
     try {
       if (editingBank) {
         await dispatch(
-          updateBank({ id: editingBank._id, updatedData: formData })
+          updateBank({ id: editingBank._id, updatedData: formData }),
         ).unwrap();
         showSuccess("Bank details updated successfully!");
       } else {
@@ -183,12 +152,10 @@ const AddBank = () => {
         showSuccess("Bank added successfully!");
       }
       resetForm();
-      dispatch(fetchBanks());
     } catch (err) {
-      const action = editingBank ? "update" : "create";
-      showError(`Failed to ${action} bank. Please try again.`);
-      console.error(`Failed to ${action} bank:`, err);
-      resetForm();
+      showError(
+        `Failed to ${editingBank ? "update" : "create"} bank. Please try again.`,
+      );
     }
   };
 
@@ -202,28 +169,24 @@ const AddBank = () => {
   };
 
   const handleDelete = async (bankId) => {
-    {
-      try {
-        await dispatch(deleteBank(bankId)).unwrap();
-        showSuccess("Bank deleted successfully!");
-        dispatch(fetchBanks());
-      } catch (err) {
-        showError("Failed to delete bank. Please try again.");
-        console.error("Failed to delete bank:", err);
-      }
+    try {
+      await dispatch(deleteBank(bankId)).unwrap();
+      showSuccess("Bank deleted successfully!");
+    } catch (err) {
+      showError("Failed to delete bank. Please try again.");
     }
   };
 
   const filteredAndSortedItems = useMemo(() => {
     let list = Array.isArray(banks) ? banks.filter(Boolean) : [];
-    if (searchText && searchText.trim()) {
+    if (searchText.trim()) {
       const s = searchText.trim().toLowerCase();
       list = list.filter(
         (bank) =>
           (bank.bankname || "").toLowerCase().includes(s) ||
           (bank.bankbranch || "").toLowerCase().includes(s) ||
           (bank.accountno || "").toLowerCase().includes(s) ||
-          (bank.ifsccode || "").toLowerCase().includes(s)
+          (bank.ifsccode || "").toLowerCase().includes(s),
       );
     }
     if (statusFilter === "Active" || statusFilter === "Inactive") {
@@ -231,12 +194,8 @@ const AddBank = () => {
     }
     const { key, dir } = sortBy;
     list.sort((a, b) => {
-      let av = a[key];
-      let bv = b[key];
-      if (typeof av === "string") {
-        av = (av || "").toString().toLowerCase();
-        bv = (bv || "").toString().toLowerCase();
-      }
+      let av = (a[key] || "").toString().toLowerCase();
+      let bv = (b[key] || "").toString().toLowerCase();
       if (av < bv) return dir === "asc" ? -1 : 1;
       if (av > bv) return dir === "asc" ? 1 : -1;
       return 0;
@@ -246,7 +205,7 @@ const AddBank = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAndSortedItems.length / rowsPerPage)
+    Math.ceil(filteredAndSortedItems.length / rowsPerPage),
   );
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -258,25 +217,22 @@ const AddBank = () => {
   }, [filteredAndSortedItems, currentPage, rowsPerPage]);
 
   const toggleSort = (key) => {
-    setSortBy((prev) => {
-      if (prev.key === key) {
-        return { ...prev, dir: prev.dir === "asc" ? "desc" : "asc" };
-      } else {
-        return { key, dir: "asc" };
-      }
-    });
+    setSortBy((prev) =>
+      prev.key === key
+        ? { ...prev, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "asc" },
+    );
   };
 
+  const inputCls =
+    "w-full px-3 py-2 text-sm border border-gray-300 outline-none box-border";
+  const thCls =
+    "px-4 py-3 text-sm font-semibold text-left text-gray-700 border-r border-gray-200";
+
   return (
-    <div
-      className="w-full"
-      style={{ backgroundColor: "#ecf0f5", minHeight: "100vh", padding: "0" }}
-    >
-      {/* Header Section */}
-      <div
-        className="w-full bg-white"
-        style={{ borderBottom: "1px solid #e0e0e0" }}
-      >
+    <div className="w-full min-h-screen" style={{ backgroundColor: "#ecf0f5" }}>
+      {/* Header */}
+      <div className="w-full bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-6 py-3">
           <h1 className="text-lg font-normal" style={{ color: "#666" }}>
             ADD BY ADMIN | ADD BANK
@@ -284,141 +240,123 @@ const AddBank = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ padding: "20px" }}>
-        {/* Add/Edit Section */}
+      <div className="p-5">
+        {/* Form */}
         <form
           onSubmit={handleAddOrUpdateBank}
-          className="bg-white mb-5"
-          style={{ border: "1px solid #ddd" }}
+          className="bg-white mb-5 border border-gray-300"
         >
-          {" "}
           <div
-            className="px-5 py-3"
-            style={{
-              backgroundColor: "#f9f9f9",
-              borderBottom: "1px solid #ddd",
-            }}
+            className="px-5 py-3 border-b border-gray-300"
+            style={{ backgroundColor: "#f9f9f9" }}
           >
             <h2
-              className="text-base font-semibold"
-              style={{ color: "#555", margin: 0 }}
+              className="text-base font-semibold m-0"
+              style={{ color: "#555" }}
             >
               {editingBank ? "EDIT BANK" : "ADD BANK"}
             </h2>
           </div>
+
           <div className="p-6">
-            <div
-              className="flex items-start gap-4"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: "1rem",
-              }}
-            >
+            <div className="grid grid-cols-5 gap-4">
               {/* Bank Name */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 <label
-                  className="block text-sm font-medium"
+                  className="text-sm font-medium"
                   style={{ color: "#333" }}
                 >
-                  Bank Name <span style={{ color: "#f44336" }}>*</span>
+                  Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="bankname"
                   value={formData.bankname}
                   onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 text-sm"
-                  style={styles.input}
+                  className={inputCls}
+                  placeholder="Enter bank name"
                 />
                 {errors.bankname && (
-                  <div style={styles.errorText}>{errors.bankname}</div>
+                  <p className="text-red-500 text-xs">{errors.bankname}</p>
                 )}
               </div>
 
               {/* Bank Branch */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 <label
-                  className="block text-sm font-medium"
+                  className="text-sm font-medium"
                   style={{ color: "#333" }}
                 >
-                  Bank Branch <span style={{ color: "#f44336" }}>*</span>
+                  Bank Branch <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="bankbranch"
                   value={formData.bankbranch}
                   onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 text-sm"
-                  style={styles.input}
+                  className={inputCls}
+                  placeholder="Enter branch"
                 />
                 {errors.bankbranch && (
-                  <div style={styles.errorText}>{errors.bankbranch}</div>
+                  <p className="text-red-500 text-xs">{errors.bankbranch}</p>
                 )}
               </div>
 
-              {/* Account No. */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* Account No */}
+              <div className="flex flex-col gap-2">
                 <label
-                  className="block text-sm font-medium"
+                  className="text-sm font-medium"
                   style={{ color: "#333" }}
                 >
-                  Account No. <span style={{ color: "#f44336" }}>*</span>
+                  Account No. <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="accountno"
                   value={formData.accountno}
                   onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 text-sm"
-                  style={styles.input}
+                  className={inputCls}
+                  placeholder="Enter account no."
                 />
                 {errors.accountno && (
-                  <div style={styles.errorText}>{errors.accountno}</div>
+                  <p className="text-red-500 text-xs">{errors.accountno}</p>
                 )}
               </div>
 
               {/* IFSC Code */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 <label
-                  className="block text-sm font-medium"
+                  className="text-sm font-medium"
                   style={{ color: "#333" }}
                 >
-                  IFSC Code <span style={{ color: "#f44336" }}>*</span>
+                  IFSC Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="ifsccode"
                   value={formData.ifsccode}
                   onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 text-sm"
-                  style={styles.input}
+                  className={inputCls}
+                  placeholder="Enter IFSC code"
                 />
                 {errors.ifsccode && (
-                  <div style={styles.errorText}>{errors.ifsccode}</div>
+                  <p className="text-red-500 text-xs">{errors.ifsccode}</p>
                 )}
               </div>
 
-              {/* Status Field */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* Status */}
+              <div className="flex flex-col gap-2">
                 <label
-                  className="block text-sm font-medium"
+                  className="text-sm font-medium"
                   style={{ color: "#333" }}
                 >
-                  Status <span style={{ color: "#f44336" }}>*</span>
+                  Status <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm"
-                  style={styles.input}
-                  required
+                  className={inputCls}
                 >
                   <option value="" disabled>
                     Select Here
@@ -427,35 +365,38 @@ const AddBank = () => {
                   <option value="Inactive">Inactive</option>
                 </select>
                 {errors.status && (
-                  <div style={styles.errorText}>{errors.status}</div>
+                  <p className="text-red-500 text-xs">{errors.status}</p>
                 )}
               </div>
             </div>
-            {/* Add / Update Button */}
-            <div className="mt-6" style={{ display: "flex", gap: 12 }}>
+
+            {/* Buttons */}
+            <div className="mt-6 flex gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 text-sm text-white"
+                disabled={isLoading}
+                className="px-6 py-2 text-sm text-white font-semibold cursor-pointer border-none"
                 style={{
                   backgroundColor: "#337ab7",
-                  border: "none",
                   borderRadius: 3,
-                  cursor: "pointer",
-                  fontWeight: 600,
+                  opacity: isLoading ? 0.6 : 1,
                 }}
               >
-                {editingBank ? "Update Bank" : "Save"}
+                {isLoading
+                  ? "Please wait..."
+                  : editingBank
+                    ? "Update Bank"
+                    : "Save"}
               </button>
               {editingBank && (
                 <button
+                  type="button"
                   onClick={resetForm}
-                  className="px-4 py-2 text-sm"
+                  className="px-4 py-2 text-sm cursor-pointer border-none"
                   style={{
                     backgroundColor: "#e0e0e0",
                     color: "#333",
                     borderRadius: 3,
-                    border: "none",
-                    cursor: "pointer",
                   }}
                 >
                   Cancel
@@ -466,54 +407,43 @@ const AddBank = () => {
         </form>
 
         {/* List Section */}
-        <div className="bg-white" style={{ border: "1px solid #ddd" }}>
-          {/* Table header with filters and search */}
+        <div className="bg-white border border-gray-300">
+          {/* Filters */}
           <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "12px 20px",
-              borderBottom: "1px solid #eee",
-              backgroundColor: "#f9f9f9",
-            }}
+            className="flex items-center justify-between px-5 py-3 border-b border-gray-300"
+            style={{ backgroundColor: "#f9f9f9" }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <label
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
-                <span style={{ color: "#333", fontSize: 13 }}>Show</span>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2">
+                <span className="text-sm" style={{ color: "#333" }}>
+                  Show
+                </span>
                 <select
                   value={rowsPerPage}
                   onChange={(e) => {
                     setRowsPerPage(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  style={styles.smallSelect}
+                  className="px-2 py-1.5 border border-gray-300 text-sm"
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
                   <option value={50}>50</option>
                 </select>
-                <span style={{ color: "#333", fontSize: 13 }}>entries</span>
+                <span className="text-sm" style={{ color: "#333" }}>
+                  entries
+                </span>
               </label>
 
-              <button
-                style={{
-                  ...styles.smallActionBtn,
-                  padding: "8px 12px",
-                  backgroundColor: "#f7f7f7",
-                  border: "1px solid #ddd",
-                  borderRadius: "3px",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
-              >
+              <button className="px-3 py-1.5 text-sm border border-gray-300 bg-gray-50 cursor-pointer">
                 Inactive List
               </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: "#333", fontSize: 13 }}>Search:</span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm" style={{ color: "#333" }}>
+                Search:
+              </span>
               <input
                 type="text"
                 placeholder="Search..."
@@ -522,7 +452,7 @@ const AddBank = () => {
                   setSearchText(e.target.value);
                   setCurrentPage(1);
                 }}
-                style={styles.searchInput}
+                className="px-3 py-1.5 text-sm border border-gray-300 w-48 outline-none"
               />
               <button
                 onClick={() => {
@@ -531,15 +461,7 @@ const AddBank = () => {
                   setRowsPerPage(10);
                   setSortBy({ key: "bankname", dir: "asc" });
                 }}
-                style={{
-                  ...styles.smallActionBtn,
-                  padding: "8px 12px",
-                  backgroundColor: "#fff",
-                  border: "1px solid #ddd",
-                  borderRadius: "3px",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
+                className="px-3 py-1.5 text-sm border border-gray-300 bg-white cursor-pointer"
               >
                 Reset
               </button>
@@ -547,49 +469,20 @@ const AddBank = () => {
           </div>
 
           {/* Table */}
-          <div style={{ maxHeight: "500px", overflowY: "auto" }}>
-            <table
-              className="w-full"
-              style={{
-                borderCollapse: "collapse",
-                width: "100%",
-                backgroundColor: "#fff",
-              }}
-            >
+          <div className="overflow-auto max-h-[500px]">
+            <table className="w-full border-collapse">
               <thead
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  backgroundColor: "#f5f5f5",
-                  zIndex: 1,
-                }}
+                className="sticky top-0 z-10"
+                style={{ backgroundColor: "#f9f9f9" }}
               >
-                <tr style={{ borderBottom: "2px solid #ddd" }}>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-center"
-                    style={thStyle(50)}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      S.No
-                    </div>
-                  </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-left"
-                    style={thStyle(150)}
-                  >
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
+                <tr className="border-b-2 border-gray-300">
+                  <th className={`${thCls} w-12 text-center`}>S.No</th>
+                  <th className={thCls}>
+                    <div className="flex items-center gap-2">
                       Bank Name
                       <button
                         onClick={() => toggleSort("bankname")}
-                        style={styles.sortBtn}
+                        className="bg-transparent border-none cursor-pointer text-xs p-0.5"
                       >
                         {sortBy.key === "bankname"
                           ? sortBy.dir === "asc"
@@ -597,42 +490,17 @@ const AddBank = () => {
                             : "▼"
                           : "↕"}
                       </button>
-                    </div>{" "}
+                    </div>
                   </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-left"
-                    style={thStyle(150)}
-                  >
-                    Bank Branch
-                  </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-left"
-                    style={thStyle(150)}
-                  >
-                    Account Number
-                  </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-left"
-                    style={thStyle(120)}
-                  >
-                    IFSC Code
-                  </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-center"
-                    style={thStyle(100)}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 4,
-                      }}
-                    >
+                  <th className={thCls}>Bank Branch</th>
+                  <th className={thCls}>Account Number</th>
+                  <th className={thCls}>IFSC Code</th>
+                  <th className={`${thCls} text-center`}>
+                    <div className="flex items-center justify-center gap-2">
                       Status
                       <button
                         onClick={() => toggleSort("status")}
-                        style={styles.sortBtn}
+                        className="bg-transparent border-none cursor-pointer text-xs p-0.5"
                       >
                         {sortBy.key === "status"
                           ? sortBy.dir === "asc"
@@ -642,61 +510,28 @@ const AddBank = () => {
                       </button>
                     </div>
                   </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-center"
-                    style={thStyle(100)}
-                  >
-                    Updated
-                  </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-center"
-                    style={thStyle(120)}
-                  >
-                    Updated By
-                  </th>
-                  <th
-                    className="px-4 py-3 text-sm font-semibold text-center"
-                    style={thStyle(100)}
-                  >
-                    Action
-                  </th>
+                  <th className={`${thCls} text-center`}>Updated</th>
+                  <th className={`${thCls} text-center`}>Updated By</th>
+                  <th className={`${thCls} text-center`}>Action</th>
                 </tr>
               </thead>
 
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td
-                      colSpan={9}
-                      style={{
-                        padding: 24,
-                        textAlign: "center",
-                        color: "#777",
-                      }}
-                    >
+                    <td colSpan={9} className="py-6 text-center text-gray-500">
                       Loading banks...
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td
-                      colSpan={9}
-                      style={{ padding: 24, textAlign: "center", color: "red" }}
-                    >
+                    <td colSpan={9} className="py-6 text-center text-red-500">
                       Error: {error}
                     </td>
                   </tr>
                 ) : currentPageData.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={9}
-                      style={{
-                        padding: 24,
-                        textAlign: "center",
-                        color: "#777",
-                        backgroundColor: "#fff",
-                      }}
-                    >
+                    <td colSpan={9} className="py-6 text-center text-gray-500">
                       No bank entries found.
                     </td>
                   </tr>
@@ -704,15 +539,15 @@ const AddBank = () => {
                   currentPageData.map((item, index) => (
                     <tr
                       key={item._id}
+                      className="border-b border-gray-200"
                       style={{
-                        borderBottom: "1px solid #ddd",
                         backgroundColor:
                           index % 2 === 0 ? "#ffffff" : "#f9f9f9",
                       }}
                     >
                       <td
                         className="px-4 py-3 text-sm text-center"
-                        style={{ color: "#333", width: 50 }}
+                        style={{ color: "#333" }}
                       >
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </td>
@@ -738,14 +573,14 @@ const AddBank = () => {
                         className="px-4 py-3 text-sm"
                         style={{ color: "#333" }}
                       >
-                        {item.ifsccode || ""}
+                        {item?.ifsccode || ""}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
                           className="inline-block px-3 py-1 text-xs text-white"
                           style={{
                             backgroundColor:
-                              item.status.toLowerCase() === "active"
+                              item.status?.toLowerCase() === "active"
                                 ? "#337ab7"
                                 : "#d9534f",
                             borderRadius: 3,
@@ -758,7 +593,9 @@ const AddBank = () => {
                         className="px-4 py-3 text-sm text-center"
                         style={{ color: "#333" }}
                       >
-                        {new Date(item?.updated).toLocaleDateString()}
+                        {item?.updated
+                          ? new Date(item.updated).toLocaleDateString()
+                          : "N/A"}
                       </td>
                       <td
                         className="px-4 py-3 text-sm text-center"
@@ -766,31 +603,24 @@ const AddBank = () => {
                       >
                         {item?.updated_by || "N/A"}
                       </td>
-                      <td className="px-4 py-3" style={{ textAlign: "center" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: 8,
-                          }}
-                        >
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-2">
                           <button
                             onClick={() => handleEdit(item._id)}
+                            className="p-1.5 bg-white cursor-pointer"
                             style={{
-                              ...styles.iconBtn,
-                              borderColor: "#337ab7",
+                              border: "1px solid #337ab7",
                               color: "#337ab7",
                             }}
                             title="Edit"
                           >
                             <Pencil size={14} />
                           </button>
-
                           <button
                             onClick={() => handleDelete(item._id)}
+                            className="p-1.5 bg-white cursor-pointer"
                             style={{
-                              ...styles.iconBtn,
-                              borderColor: "#d9534f",
+                              border: "1px solid #d9534f",
                               color: "#d9534f",
                             }}
                             title="Delete"
@@ -806,17 +636,9 @@ const AddBank = () => {
             </table>
           </div>
 
-          {/* Footer: Pagination and summary */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: 12,
-              backgroundColor: "#fff",
-            }}
-          >
-            <div style={{ color: "#666", fontSize: 13 }}>
+          {/* Footer */}
+          <div className="flex items-center justify-between p-3 bg-white">
+            <div className="text-sm" style={{ color: "#666" }}>
               Showing{" "}
               <strong style={{ color: "#333" }}>
                 {filteredAndSortedItems.length === 0
@@ -827,7 +649,7 @@ const AddBank = () => {
               <strong style={{ color: "#333" }}>
                 {Math.min(
                   currentPage * rowsPerPage,
-                  filteredAndSortedItems.length
+                  filteredAndSortedItems.length,
                 )}
               </strong>{" "}
               of{" "}
@@ -836,7 +658,6 @@ const AddBank = () => {
               </strong>{" "}
               entries
             </div>
-
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -848,115 +669,5 @@ const AddBank = () => {
     </div>
   );
 };
-
-/* ---------------------------
-   Inline styles (kept organized)
-   --------------------------- */
-
-const styles = {
-  input: {
-    border: "1px solid #d2d6de",
-    borderRadius: 3,
-    padding: "8px 10px",
-    fontSize: 14,
-    width: "100%",
-    boxSizing: "border-box",
-  },
-  radioLabel: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    cursor: "pointer",
-  },
-  smallActionBtn: {
-    backgroundColor: "#f7f7f7",
-    border: "1px solid #ddd",
-    padding: "6px 10px",
-    borderRadius: 3,
-    cursor: "pointer",
-    fontSize: 13,
-  },
-  searchInput: {
-    padding: "8px 10px",
-    borderRadius: 3,
-    border: "1px solid #d2d6de",
-    width: 200,
-  },
-  clearBtn: {
-    padding: "8px 10px",
-    borderRadius: 3,
-    border: "1px solid #ddd",
-    backgroundColor: "#fff",
-    cursor: "pointer",
-    fontSize: 13,
-  },
-  smallSelect: {
-    padding: "6px 8px",
-    borderRadius: 3,
-    border: "1px solid #d2d6de",
-  },
-  iconBtn: {
-    padding: 6,
-    borderRadius: 4,
-    border: "1px solid #ccc",
-    backgroundColor: "white",
-    cursor: "pointer",
-  },
-  sortBtn: {
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    padding: 2,
-    fontSize: 12,
-  },
-  messageBox: {
-    backgroundColor: "#e9f7ef",
-    border: "1px solid #c7efd9",
-    padding: "8px 12px",
-    borderRadius: 4,
-    marginBottom: 12,
-    color: "#2f7a4b",
-    display: "inline-block",
-  },
-  pagination: {
-    display: "flex",
-    gap: 6,
-    alignItems: "center",
-  },
-  pageBtn: {
-    padding: "6px 9px",
-    border: "1px solid #ddd",
-    borderRadius: 4,
-    cursor: "pointer",
-    background: "white",
-  },
-  disabledBtn: {
-    opacity: 0.5,
-    cursor: "not-allowed",
-  },
-  activePageBtn: {
-    backgroundColor: "#3598dc",
-    color: "white",
-    borderColor: "#2f82c4",
-  },
-  pageGap: {
-    padding: "0 6px",
-    color: "#999",
-  },
-  errorText: {
-    color: "#f44336",
-    fontSize: "12px",
-    marginTop: "4px",
-  },
-};
-
-/* Helper to produce th style with fixed width optional */
-const thStyle = (width) => ({
-  color: "#333",
-  borderRight: "1px solid #ddd",
-  textAlign: "left",
-  width: width ? width : "auto",
-  padding: "12px 8px",
-});
 
 export default AddBank;

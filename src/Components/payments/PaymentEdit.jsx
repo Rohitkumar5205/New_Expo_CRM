@@ -14,7 +14,7 @@ const PaymentEdit = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-  const added_By = localStorage.getItem("user_name");
+  const added_By = sessionStorage.getItem("user_name");
   const { estimates } = useSelector((state) => state.estimates);
   const { payments: allPayments, loading: paymentsLoading } = useSelector(
     (state) => state.payment,

@@ -132,7 +132,7 @@ const AddNatureOfBusiness = () => {
       (n) =>
         (n?.nature_name || "").trim().toLowerCase() ===
           trimmedName.toLowerCase() &&
-        (!editingNature || n._id !== editingNature._id)
+        (!editingNature || n._id !== editingNature._id),
     );
     if (duplicate) {
       showError("A nature of business with that name already exists!");
@@ -154,7 +154,7 @@ const AddNatureOfBusiness = () => {
     try {
       if (editingNature) {
         await dispatch(
-          updateNature({ id: editingNature._id, updates: natureData })
+          updateNature({ id: editingNature._id, updates: natureData }),
         ).unwrap();
         showSuccess("Nature of Business updated successfully!");
       } else {
@@ -196,7 +196,7 @@ const AddNatureOfBusiness = () => {
       } catch (err) {
         showError(
           "Failed to delete Nature of Business. Please try again.",
-          3000
+          3000,
         );
         console.error("Failed to delete Nature of Business:", err);
       }
@@ -208,13 +208,13 @@ const AddNatureOfBusiness = () => {
     if (searchText && searchText.trim()) {
       const s = searchText.trim().toLowerCase();
       list = list.filter((n) =>
-        (n?.nature_name || "").toLowerCase().includes(s)
+        (n?.nature_name || "").toLowerCase().includes(s),
       );
     }
     if (statusFilter === "Active" || statusFilter === "Inactive") {
       list = list.filter(
         (n) =>
-          (n?.nature_status || "").toLowerCase() === statusFilter.toLowerCase()
+          (n?.nature_status || "").toLowerCase() === statusFilter.toLowerCase(),
       );
     }
     const { key, dir } = sortBy;
@@ -237,7 +237,7 @@ const AddNatureOfBusiness = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAndSortedNatures.length / rowsPerPage)
+    Math.ceil(filteredAndSortedNatures.length / rowsPerPage),
   );
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -722,7 +722,7 @@ const AddNatureOfBusiness = () => {
               <strong style={{ color: "#333" }}>
                 {Math.min(
                   currentPage * rowsPerPage,
-                  filteredAndSortedNatures.length
+                  filteredAndSortedNatures.length,
                 )}
               </strong>{" "}
               of{" "}

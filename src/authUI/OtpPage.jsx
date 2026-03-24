@@ -39,7 +39,7 @@ const OtpPage = () => {
   // };
   // Inside your component
   const handleResend = async () => {
-    const username = localStorage.getItem("user_name"); // get from localStorage
+    const username = sessionStorage.getItem("user_name"); // get from sessionStorage
     if (!username) {
       showError("Username not found. Please login again.");
       return navigate("/login"); // redirect to login if missing
@@ -47,7 +47,7 @@ const OtpPage = () => {
 
     try {
       const result = await dispatch(
-        resendOTP({ user_name: username })
+        resendOTP({ user_name: username }),
       ).unwrap();
       showSuccess("OTP resent successfully!");
       console.log("New OTP:", result.otp); // for testing only
