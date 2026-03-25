@@ -57,7 +57,9 @@ import CreditNote from "./Components/CreditNote";
 import Payments from "./Components/payments/Payment";
 import PaymentEdit from "./Components/payments/PaymentEdit";
 import InvoiceEdit from "./Components/InvoiceEdit";
-import VisitorDetail from "./Components/VisitorDetail";
+import GeneralOverview from "./pages/web_visitor_data/overviews/GeneralOverview";
+import CorporateOverview from "./pages/web_visitor_data/overviews/CorporateOverview";
+import HealthCampOverview from "./pages/web_visitor_data/overviews/HealthCampOverview";
 const App = () => {
   return (
     <>
@@ -188,10 +190,18 @@ const App = () => {
             element={<HealthCampVisitorsList />}
           />
           <Route
-            path="/webVisitorData/visitorDetails/:id"
-            element={<VisitorDetail />}
+            path="/webVisitorData/generalVisitorDetails/:id"
+            element={<GeneralOverview />}
           />
 
+         <Route 
+            path="/webVisitorData/corporateVisitorDetails/:id"
+            element={<CorporateOverview />}
+          />
+          <Route 
+            path="/webVisitorData/healthCampVisitorDetails/:id"
+            element={<HealthCampOverview/>}
+          />
           {/* OrganicExpo2026 */}
           <Route
             path="/organicExpo2026/organicAddClients"

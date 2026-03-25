@@ -68,7 +68,7 @@ const GeneralVisitorsList = () => {
       // linkTo: (row) => `/general-visitors/${row._id}`,
       render: (value, row) => (
         <Link
-          to={`/webVisitorData/visitorDetails/${row.id}`} // use row.id
+          to={`/webVisitorData/generalVisitorDetails/${row._id}`} // use row.id
           className="text-blue-500 hover:underline"
         >
           {value}

@@ -22,6 +22,7 @@ import activityLogReducer from "../features/activityLog/activityLogSlice";
 import corporateVisitorReducer from "../features/visitor/corporateVisitorSlice";
 import generalVisitorReducer from "../features/visitor/generalVisitorSlice";
 import healthCampVisitorReducer from "../features/visitor/freeHealthCampSlice";
+import visitorReviewReducer from "../features/visitor/visitorReviewSlice";
 
 export const store = configureStore({
   reducer: {
@@ -48,6 +49,7 @@ export const store = configureStore({
     corporateVisitors: corporateVisitorReducer,
     generalVisitors: generalVisitorReducer,
     healthCampVisitors: healthCampVisitorReducer,
+    visitorReview: visitorReviewReducer,
   },
 });
 
